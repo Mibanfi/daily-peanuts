@@ -38,18 +38,22 @@ func (cache *saveData) update() {
 
 		out, _ = exec.Command("node", getstrip).Output()
 		imgsrc := strings.TrimSpace(string(out))
-		fmt.Println("Scraped new image url from webpage:", imgsrc)
+		if imgsrc != "" {
+			fmt.Println("Scraped new image url from webpage:", imgsrc)
 
-		f, _ := os.Open(index)
-		page, _ = io.ReadAll(f)
-		page = []byte(strings.Replace(string(page), "{IMGSRC}", imgsrc, -1))
-		f.Close()
-		fmt.Println("Built today's page")
+			f, _ := os.Open(index)
+			page, _ = io.ReadAll(f)
+			page = []byte(strings.Replace(string(page), "{IMGSRC}", imgsrc, -1))
+			f.Close()
+			fmt.Println("Built today's page")
 
-		cache.page = page
-		cache.day = day
-		cache.month = month
-		cache.year = year
+			cache.page = page
+			cache.day = day
+			cache.month = month
+			cache.year = year
+		} else {
+			fmt.Println("Scraping failed. We will try again on page load.")
+		}
 	}
 
 }
