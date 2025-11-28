@@ -1,4 +1,7 @@
+# Daily Peanuts Strips in your browser
 This is a little tool that hosts the daily Peanuts strip from *gogocomics* at `localhost:8080`.
+
+I made this because I wanted to have the Peanuts strip of the day as my homepage.
 
 ## Building
 **Prerequisites:** node, npm, go
