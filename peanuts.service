@@ -1,0 +1,12 @@
+[Unit]
+Description=Hosts the daily Peanuts strip on 127.0.0.1:8080
+After=network.target
+
+[Service]
+Type=idle
+Restart=always
+User=<your-username>
+ExecStart=/<path-to-repo>/daily-peanuts/main
+
+[Install]
+WantedBy=multi-user.target
