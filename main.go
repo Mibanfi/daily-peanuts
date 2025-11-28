@@ -6,26 +6,70 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
-const INDEX = "/home/michele/Codice/daily-peanuts/index.html"
-const GETSTRIP = "/home/michele/Codice/daily-peanuts/getStrip.js"
+const INDEX = "index.html"
+const GETSTRIP = "getStrip.js"
 const ADDRESS = "127.0.0.1:8080"
 
-func main() {
-	var imgsrc string
+type saveData struct {
+	page  []byte
+	day   int
+	month time.Month
+	year  int
+}
+
+func (cache *saveData) update() {
+	var page []byte
 	var out []byte
-	out, _ = exec.Command("node", GETSTRIP).Output()
-	imgsrc = strings.TrimSpace(string(out))
-	fmt.Println("Retrieved image url:", imgsrc)
+	var dir, getstrip, index string
+
+	day, month, year := time.Now().Date()
+
+	if !(day == cache.day && month == cache.month && year == cache.year) {
+		e, _ := os.Executable()
+		dir = path.Dir(e)
+		getstrip = filepath.Join(dir, GETSTRIP)
+		index = filepath.Join(dir, INDEX)
+
+		out, _ = exec.Command("node", getstrip).Output()
+		imgsrc := strings.TrimSpace(string(out))
+		fmt.Println("Scraped new image url from webpage:", imgsrc)
+
+		f, _ := os.Open(index)
+		page, _ = io.ReadAll(f)
+		page = []byte(strings.Replace(string(page), "{IMGSRC}", imgsrc, -1))
+		f.Close()
+		fmt.Println("Built today's page")
+
+		cache.page = page
+		cache.day = day
+		cache.month = month
+		cache.year = year
+	}
+
+}
+
+func main() {
+
+	var cache saveData
+	cache.update()
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		f, _ := os.Open(INDEX)
-		defer f.Close()
-		content, _ := io.ReadAll(f)
-		content = []byte(strings.Replace(string(content), "{IMGSRC}", imgsrc, -1))
-		w.Write(content)
+		cache.update()
+		fmt.Println("Serving page at", time.Now())
+		w.Write(cache.page)
 	})
+
 	fmt.Println("Serving at", ADDRESS)
-	http.ListenAndServe(ADDRESS, nil)
+	err := http.ListenAndServe(ADDRESS, nil)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Closed")
+	}
 }
